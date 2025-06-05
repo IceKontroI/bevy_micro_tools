@@ -1,0 +1,15 @@
+[package]
+name = "bevy_micro_tools"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ndex = "0.1.0"
+# proc_macros = { path = "../proc_macros" }
+# bevy = "0.16.0"
+# bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
+# can revert back to bevy nightly once this is merged: https://github.com/bevyengine/bevy/pull/19462
+bevy = { git = "https://github.com/tychedelia/bevy", branch = "image-grow-2" }
+
+seq-macro = "0.3"
+clap = { version = "4.5.39", features = ["derive"] }
