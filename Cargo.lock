@@ -889,7 +889,6 @@ dependencies = [
  "clap",
  "derive_builder",
  "ndex",
- "seq-macro",
 ]
 
 [[package]]
