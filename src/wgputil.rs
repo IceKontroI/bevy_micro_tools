@@ -4,7 +4,55 @@ use bevy::render::storage::GpuShaderStorageBuffer;
 use bevy::render::texture::{FallbackImage, GpuImage};
 use bevy::{asset::*, log::*, prelude::*};
 use bevy::render::{render_resource::*, renderer::*};
+use derive_builder::Builder;
 use encase::internal::WriteInto;
+
+#[derive(Builder, Default)]
+#[builder(default, pattern = "owned")] 
+pub struct ImageView<'a> {
+    pub label: Option<&'a str>,
+    pub format: Option<TextureFormat>,
+    pub dimension: Option<TextureViewDimension>,
+    pub usage: Option<TextureUsages>,
+    pub aspect: TextureAspect,
+    pub base_mip_level: u32,
+    pub mip_level_count: Option<u32>,
+    pub base_array_layer: u32,
+    pub array_layer_count: Option<u32>,
+}
+
+impl<'a> ImageViewBuilder<'a> {
+    pub fn descriptor(self) -> TextureViewDescriptor<'a> {
+        let view_mode = self.build().unwrap();
+        TextureViewDescriptor {
+            label: view_mode.label,
+            format: view_mode.format,
+            dimension: view_mode.dimension,
+            usage: view_mode.usage,
+            aspect: view_mode.aspect,
+            base_mip_level: view_mode.base_mip_level,
+            mip_level_count: view_mode.mip_level_count,
+            base_array_layer: view_mode.base_array_layer,
+            array_layer_count: view_mode.array_layer_count,
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // TODO this is garbage, clean it up
 

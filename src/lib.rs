@@ -1,4 +1,3 @@
-pub mod chain;
 pub mod attach;
 pub mod wgputil;
 

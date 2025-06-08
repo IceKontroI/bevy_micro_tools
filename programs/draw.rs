@@ -1,7 +1,7 @@
 use bevy::{asset::*, ecs::query::*, image::*, input::mouse::*, math::*, prelude::*};
 use bevy::render::{extract_resource::*, render_graph::*, render_resource::*, renderer::*, view::*, *};
 use bevy::core_pipeline::core_2d::graph::*;
-use chain::*;
+use chain_link::{Length, L};
 use extract_component::*;
 use ndex::{Index, IndexMut};
 use crate::{*, attach::*, wgputil::*};
@@ -24,11 +24,7 @@ impl Plugin for DrawPlugin {
 
         // required for auto-resizing the draw canvas
         // we can't use the screen output as canvas since it's not persistent
-        app.add_plugins(AttachmentPlugin::<DrawCanvas>::default());
-        // since we need access to the attachable images on the GPU, to bind to a shader, we must extract it
-        // TODO it's easy to miss this requirement, so to make the API easier to use, this should be integrated if possible
-        //      but there doesn't seem to be a rust-compliant way to auto-detect ExtractComponent trait
-        app.add_plugins(ExtractComponentPlugin::<DrawCanvas>::default());
+        app.add_plugins(AttachPlugin::<DrawCanvas, AndExtract>::default());
 
         // create a 2d camera with the DrawCanvas component, which will be automatically resized for us
         app.add_systems(Startup, |mut commands: Commands| {
@@ -73,7 +69,7 @@ pub struct DrawCanvas {
 // we just need to implement Attachment at the specific index of our Handle
 // and it works seamlessly with bevy's AsBindGroup macro
 
-impl Attachment<0> for DrawCanvas {
+impl Attach<0> for DrawCanvas {
     const COPY_ON_RESIZE: bool = true;
     const TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba32Float;
     const TEXTURE_ASPECT: TextureAspect = TextureAspect::All;
@@ -114,8 +110,6 @@ pub enum BrushType {
     Draw = 1,
 }
 
-// unnecessarily long mouse trail drawing system
-// TODO simplify this!
 pub fn mouse_drawing_system(
     camera: Query<&Camera>,
     mouse: Res<ButtonInput<MouseButton>>,
@@ -207,16 +201,16 @@ pub fn mouse_drawing_system(
     } else {
         mouse_trail.continuation = false;
         // Initial position: create a small square
-        let left_bottom = xy - Vec2::new(mouse_trail.radius, mouse_trail.radius);
-        let right_bottom = xy + Vec2::new(mouse_trail.radius, -mouse_trail.radius);
-        let left_top = xy + Vec2::new(-mouse_trail.radius, mouse_trail.radius);
-        let right_top = xy + Vec2::new(mouse_trail.radius, mouse_trail.radius);
-
+        let r = mouse_trail.radius;
+        let pos_00 = xy + Vec2::new(-r, -r);
+        let pos_10 = xy + Vec2::new( r, -r);
+        let pos_01 = xy + Vec2::new(-r,  r);
+        let pos_11 = xy + Vec2::new( r,  r);
         mouse_trail.last_quad = Some([
-            to_ndc(left_bottom).extend(0.0).extend(1.0),
-            to_ndc(right_bottom).extend(0.0).extend(1.0),
-            to_ndc(left_top).extend(0.0).extend(1.0),
-            to_ndc(right_top).extend(0.0).extend(1.0),
+            to_ndc(pos_00).extend(0.0).extend(1.0),
+            to_ndc(pos_10).extend(0.0).extend(1.0),
+            to_ndc(pos_01).extend(0.0).extend(1.0),
+            to_ndc(pos_11).extend(0.0).extend(1.0),
         ]);
         mouse_trail.is_drawing = false;
         mouse_trail.smoothed_direction = None;
@@ -288,7 +282,7 @@ impl ViewNode for DrawCanvasPass {
             return Ok(());
         };
         let canvas = RenderPassColorAttachment {
-            view: &canvas.texture.create_view(&DrawCanvas::texture_view_descriptor()),
+            view: &canvas.texture.create_view(&DrawCanvas::texture_view(canvas.size).descriptor()),
             resolve_target: None,
             ops: Operations {
                 load: LoadOp::Load,
